@@ -22,3 +22,22 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# Maven build directory
+target/
+
+# Salamander Test Video
+*.mp4
+
+# Node Modules
+node_modules/
+
+# Env
+.env
+
+# Jobs
+jobs/
+
+# Local Test Folders
+test_results/
+test_videos/

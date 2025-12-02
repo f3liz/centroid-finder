@@ -88,3 +88,77 @@ jobs:
         run: |
           cd processor
           mvn -B test
+
+
+  frontend-e2e-tests:
+    runs-on: ubuntu-latest
+    needs: [backend-jest-tests, processor-maven-tests] # Jest and Maven tests need to pass before running these
+
+    env:
+      NODE_ENV: test
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:3000
+      VIDEO_DIR: public/videos
+      OUTPUT_DIR: jobs
+
+    steps:
+      - uses: actions/checkout@v3
+
+      # Clone the frontend repository
+      - name: Clone frontend repo
+        run: |
+          git clone https://github.com/f3liz/centroid-finder-frontend.git frontend
+
+      # Install the frontend dependencies
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm install
+
+      # Build the Next.js frontend in production mode
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+
+      # Install backend dependencies, which is needed to start the server
+      - name: Install backend dependencies
+        run: |
+          cd server
+          npm install
+
+      # Start backend + frontend in background
+      - name: Start backend and frontend
+        run: |
+          cd server && node index.js &
+          cd frontend && npm start &
+        shell: bash
+
+      # Wait for backend to become ready
+      - name: Wait for backend
+        run: |
+          echo "Waiting for backend..."
+          timeout 60 bash -c 'until curl -s http://localhost:3000/; do sleep 2; done'
+
+      # Wait for frontend to become ready
+      - name: Wait for frontend
+        run: |
+          echo "Waiting for frontend..."
+          timeout 60 bash -c 'until curl -s http://localhost:3001/; do sleep 2; done'
+
+      # Install Cypress 
+      - name: Install Cypress
+        run: |
+          cd frontend
+          npm install cypress
+
+      # Run Cypress in headless mode without UI
+      - name: Run Cypress E2E tests
+        run: |
+          cd frontend
+          npx cypress run --browser chrome --headless
+
+      # Cleanup processes
+      - name: Cleanup background processes
+        if: always()
+        run: |
+          pkill node || true

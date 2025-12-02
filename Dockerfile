@@ -1,5 +1,5 @@
-# Create the base image for Java with OpenJDK 25
-FROM openjdk:25-slim
+# Create the base image for Java with OpenJDK 21 (Temurin)
+FROM eclipse-temurin:21-jdk
 
 # Install Curl to fetch Node.js, Git, and other necessary tools
 RUN apt-get update && \

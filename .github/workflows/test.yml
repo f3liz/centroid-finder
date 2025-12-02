@@ -41,7 +41,7 @@ jobs:
           mkdir -p server/public/videos
           mkdir -p server/jobs
 
-      # Debug listing 
+      # Debug listing
       - name: List backend folder
         run: |
           cd server
@@ -68,24 +68,6 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      # Configure Maven toolchains for Maven to use Java 21
-      - name: Configure Maven toolchains
-        run: |
-          mkdir -p ~/.m2
-          cat << 'EOF' > ~/.m2/toolchains.xml
-<toolchains>
-  <toolchain>
-    <type>jdk</type>
-    <provides>
-      <version>21</version>
-    </provides>
-    <configuration>
-      <jdkHome>${JAVA_HOME}</jdkHome>
-    </configuration>
-  </toolchain>
-</toolchains>
-EOF
-
       # Cache Maven repo to speed up future builds
       - name: Cache Maven dependencies
         uses: actions/cache@v3
@@ -110,7 +92,7 @@ EOF
 
   frontend-e2e-tests:
     runs-on: ubuntu-latest
-    needs: [backend-jest-tests, processor-maven-tests] # Jest and Maven tests need to pass before running these
+    needs: [backend-jest-tests, processor-maven-tests]  # Jest and Maven tests need to pass before running these
 
     env:
       NODE_ENV: test
@@ -195,7 +177,7 @@ EOF
           cd frontend
           npx cypress run --browser chrome --headless
 
-      # Cleanup background processes
+      # Cleanup processes
       - name: Cleanup background processes
         if: always()
         run: |

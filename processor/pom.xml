@@ -8,8 +8,8 @@
   <version>1.0-SNAPSHOT</version>
 
   <properties>
-    <maven.compiler.source>21</maven.compiler.source>
-    <maven.compiler.target>21</maven.compiler.target>
+    <!-- Maven Compiler Release -->
+    <maven.compiler.release>21</maven.compiler.release>
   </properties>
 
   <dependencies>
@@ -59,7 +59,7 @@
           </descriptorRefs>
           <finalName>videoprocessor</finalName>
           <appendAssemblyId>false</appendAssemblyId>
-          <outputDirectory>${project.basedir}</outputDirectory> <!-- This is already in processor/ -->
+          <outputDirectory>${project.basedir}</outputDirectory>
           <archive>
             <manifest>
               <mainClass>io.github.f3liz.centroidFinder.VideoSummaryApp</mainClass>

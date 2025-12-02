@@ -138,7 +138,7 @@ EOF
           cd frontend
           npm run build
 
-      # Install backend dependencies, which is needed to start the server
+      # Install backend dependencies, needed to start server
       - name: Install backend dependencies
         run: |
           cd server
@@ -162,7 +162,6 @@ EOF
           mkdir -p server/jobs
           mkdir -p server/results
           echo "[]" > server/jobs/jobs.json
-          # Copy the 5-second MP4 test video (must be committed in repo)
           cp server/public/videos/Salamander5Seconds.mp4 server/public/videos/test.mp4 || true
 
       # Start backend + frontend in background
@@ -184,7 +183,7 @@ EOF
           echo "Waiting for frontend..."
           timeout 60 bash -c 'until curl -s http://localhost:3001/; do sleep 2; done'
 
-      # Install Cypress 
+      # Install Cypress
       - name: Install Cypress
         run: |
           cd frontend
@@ -196,7 +195,7 @@ EOF
           cd frontend
           npx cypress run --browser chrome --headless
 
-      # Cleanup processes
+      # Cleanup background processes
       - name: Cleanup background processes
         if: always()
         run: |

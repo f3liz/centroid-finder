@@ -92,74 +92,32 @@ jobs:
 
   frontend-e2e-tests:
     runs-on: ubuntu-latest
-    needs: [backend-jest-tests, processor-maven-tests]  # Jest and Maven tests need to pass before running these
-
-    env:
-      NODE_ENV: test
-      NEXT_PUBLIC_API_BASE_URL: http://localhost:3000
-      VIDEO_DIR: public/videos
-      OUTPUT_DIR: jobs
+    needs: [backend-jest-tests, processor-maven-tests]
 
     steps:
       - uses: actions/checkout@v3
 
-      # Clone the frontend repository
-      - name: Clone frontend repo
+      # Pull the prebuilt full-stack container
+      - name: Pull GHCR app image
         run: |
-          git clone https://github.com/f3liz/centroid-finder-frontend.git frontend
+          docker pull ghcr.io/alexanderoruban/salamander:latest
 
-      # Install the frontend dependencies
-      - name: Install frontend dependencies
+      # Run the entire app (backend + processor + frontend)
+      - name: Start full app container
         run: |
-          cd frontend
-          npm install
+          docker run -d \
+            --name salamander \
+            -p 3000:3000 \
+            -p 3001:3001 \
+            ghcr.io/alexanderoruban/salamander:latest
 
-      # Build the Next.js frontend in production mode
-      - name: Build frontend
-        run: |
-          cd frontend
-          npm run build
-
-      # Install backend dependencies, needed to start server
-      - name: Install backend dependencies
-        run: |
-          cd server
-          npm install
-
-      # Build the Java processor JAR for E2E tests
-      - name: Build processor JAR
-        run: |
-          cd processor
-          mvn -B package
-
-      # Copy JAR where backend expects it
-      - name: Place processor JAR
-        run: |
-          cp processor/target/*.jar server/processor.jar
-
-      # Create runtime folders and jobs.json so backend does not crash
-      - name: Prepare backend runtime environment
-        run: |
-          mkdir -p server/public/videos
-          mkdir -p server/jobs
-          mkdir -p server/results
-          echo "[]" > server/jobs/jobs.json
-          cp server/public/videos/Salamander5Seconds.mp4 server/public/videos/test.mp4 || true
-
-      # Start backend + frontend in background
-      - name: Start backend and frontend
-        shell: bash
-        run: |
-          cd server && node index.js &
-          cd frontend && npm start &
-
-      # Wait for backend to become ready
+      # Wait for the app backend
       - name: Wait for backend
         run: |
           echo "Waiting for backend..."
           timeout 60 bash -c 'until curl -s http://localhost:3000/; do sleep 2; done'
 
-      # Wait for frontend to become ready
+      # Wait for the frontend
       - name: Wait for frontend
         run: |
           echo "Waiting for frontend..."
@@ -168,17 +126,15 @@ jobs:
       # Install Cypress
       - name: Install Cypress
         run: |
-          cd frontend
           npm install cypress
 
-      # Run Cypress in headless mode without UI
+      # Run Cypress Tests
       - name: Run Cypress E2E tests
         run: |
-          cd frontend
           npx cypress run --browser chrome --headless
 
-      # Cleanup processes
-      - name: Cleanup background processes
+      # Cleanup
+      - name: Cleanup
         if: always()
         run: |
-          pkill node || true
+          docker rm -f salamander || true

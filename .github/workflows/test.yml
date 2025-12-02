@@ -68,6 +68,22 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      # Configure Maven toolchains so Maven actually uses Java 21
+      - name: Configure Maven toolchains
+        run: |
+          mkdir -p ~/.m2
+          echo "<toolchains>
+    <toolchain>
+      <type>jdk</type>
+      <provides>
+        <version>21</version>
+      </provides>
+      <configuration>
+        <jdkHome>${JAVA_HOME}</jdkHome>
+      </configuration>
+    </toolchain>
+</toolchains>" > ~/.m2/toolchains.xml
+
       # Cache Maven repo to speed up future builds
       - name: Cache Maven dependencies
         uses: actions/cache@v3
@@ -149,10 +165,10 @@ jobs:
 
       # Start backend + frontend in background
       - name: Start backend and frontend
+        shell: bash
         run: |
           cd server && node index.js &
           cd frontend && npm start &
-        shell: bash
 
       # Wait for backend to become ready
       - name: Wait for backend

@@ -126,6 +126,27 @@ jobs:
           cd server
           npm install
 
+      # Build the Java processor JAR for E2E tests
+      - name: Build processor JAR
+        run: |
+          cd processor
+          mvn -B package
+
+      # Copy JAR where backend expects it
+      - name: Place processor JAR
+        run: |
+          cp processor/target/*.jar server/processor.jar
+
+      # Create runtime folders and jobs.json so backend does not crash
+      - name: Prepare backend runtime environment
+        run: |
+          mkdir -p server/public/videos
+          mkdir -p server/jobs
+          mkdir -p server/results
+          echo "[]" > server/jobs/jobs.json
+          # Copy the 5-second MP4 test video (must be committed in repo)
+          cp server/public/videos/Salamander5Seconds.mp4 server/public/videos/test.mp4 || true
+
       # Start backend + frontend in background
       - name: Start backend and frontend
         run: |

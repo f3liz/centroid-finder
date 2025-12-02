@@ -68,21 +68,23 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      # Configure Maven toolchains so Maven actually uses Java 21
+      # Configure Maven toolchains for Maven to use Java 21
       - name: Configure Maven toolchains
         run: |
           mkdir -p ~/.m2
-          echo "<toolchains>
-    <toolchain>
-      <type>jdk</type>
-      <provides>
-        <version>21</version>
-      </provides>
-      <configuration>
-        <jdkHome>${JAVA_HOME}</jdkHome>
-      </configuration>
-    </toolchain>
-</toolchains>" > ~/.m2/toolchains.xml
+          cat << 'EOF' > ~/.m2/toolchains.xml
+<toolchains>
+  <toolchain>
+    <type>jdk</type>
+    <provides>
+      <version>21</version>
+    </provides>
+    <configuration>
+      <jdkHome>${JAVA_HOME}</jdkHome>
+    </configuration>
+  </toolchain>
+</toolchains>
+EOF
 
       # Cache Maven repo to speed up future builds
       - name: Cache Maven dependencies

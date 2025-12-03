@@ -1,0 +1,56 @@
+name: Automated Deployment
+
+on:
+  pull_request:
+    types: [ closed ]
+    branches: [ main ]
+
+jobs:
+  deploy:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps: 
+      - uses: actions/checkout@v3
+
+      - name: Deploy to VM (Digital Ocean)
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USERNAME }}
+          password: ${{ secrets.VM_PASSWORD }}
+          script: |
+            echo "*** Updating VM ***"
+            sudo apt-get update -y
+            sudo DEBIAN_FRONTEND=noninteractive apt-get -yqq upgrade
+
+            echo "*** Installing Docker ***"
+            sudo apt-get install -y ca-certificates curl gnupg lsb-release
+            sudo mkdir -p /etc/apt/keyrings
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            sudo apt-get update
+            sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+            echo "*** Preparing deployment directory ***"
+            mkdir -p ~/salamander/videos
+            mkdir -p ~/salamander/jobs
+            cd ~/salamander
+
+            echo "*** Pulling latest image ***"
+            docker pull ghcr.io/alexanderoruban/salamander:latest
+
+            echo "*** Removing old container ***"
+            docker rm -f salamander || true
+
+            echo "*** Starting new container with persistent volumes ***"
+            docker run -d \
+              --name salamander \
+              -p 3000:3000 \
+              -p 3001:3001 \
+              -v "$PWD/videos:/app/server/public/videos" \
+              -v "$PWD/jobs:/app/server/jobs" \
+              ghcr.io/alexanderoruban/salamander:latest
+
+            echo "*** Deployment Complete. Running containers: ***"
+            docker ps

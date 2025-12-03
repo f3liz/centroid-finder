@@ -18,7 +18,13 @@
   cd server
   npm run test:env
   ```
-  
+
+  ### Maven Tests (Java)
+  ```bash
+  cd processor
+  mvn test
+  ```
+
   ### Java JAR Test Command
   
   To run the processor JAR locally for a test video:

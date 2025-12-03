@@ -9,3 +9,59 @@ jobs:
   deploy:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+
+    steps: 
+      - uses: actions/checkout@v3
+
+      - name: Deploy to VM (Digital Ocean)
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USERNAME }}
+          password: ${{ secrets.VM_PASSWORD }}
+
+          scripts: |
+            echo "*** Updating + Upgrading VM ***"
+            sudo apt-get update -y
+            yes | sudo DEBIAN_FRONTEND=noninteractive apt-get -yqq upgrade
+
+            echo "*** Installing Docker Dependencies ***"
+            sudo apt install -y ca-certificates curl gnupg lsb-release
+
+            echo "*** Add Docker GPG Key and repo ***"
+            sudo mkdir -p /etc/apt/keyrings
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+            echo "*** Install Docker engine and compose plugin ***"
+            sudo apt update
+            sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+            echo "*** Removing old deployment folder ***"
+            rm -rf ~/salamander
+
+            echo "*** Creating Salamander Project Directory ***"
+            mdkir -p ~/salamander
+            cd ~/salamander
+
+            echo "*** Creating test_videos and test_results folders ***"
+            mkdir -p test_videos
+            mkdir -p test_results
+
+            echo "*** Pulling latest Salamander Project Image ***"
+            docker pull ghcr.io/alexanderoruban/salamander:latest
+
+            echo "*** If old container exists, remove ***"
+            docker rm -f salamander || true
+
+            echo "*** Run the new container ***"
+            docker run \
+              --name salamander \
+              -p 3000:3000 \
+              -p 3001:3001 \
+              -v "$PWD/test_videos:/videos" \
+              -v "$PWD/test_results:/results" \
+              ghcr.io/alexanderoruban/salamander:latest
+
+            echo "*** Deployment Complete. Running containers: ***"
+            docker ps

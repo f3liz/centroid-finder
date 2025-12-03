@@ -87,3 +87,14 @@ The backend will be available at http://localhost:3000, and the frontend (cloned
 
 ## License
 MIT License - see [LICENSE](./LICENSE) for details.
+
+## Automated Workflow Pipelines
+- Add more info later
+
+### Automated Testing Pipeline
+- Add more info later
+
+### Automated Deployment Pipeline
+- Add more info later
+
+TEST!!!

@@ -20,7 +20,7 @@ jobs:
           username: ${{ secrets.VM_USERNAME }}
           password: ${{ secrets.VM_PASSWORD }}
 
-          scripts: |
+          script: |
             echo "*** Updating + Upgrading VM ***"
             sudo apt-get update -y
             yes | sudo DEBIAN_FRONTEND=noninteractive apt-get -yqq upgrade

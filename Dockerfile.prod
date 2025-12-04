@@ -1,49 +1,79 @@
-# Base Image: Java JDK 21 for the processor
+# Base Image: Java JDK 21 for building the processor
+FROM maven:3.9.6-eclipse-temurin-21 AS processor-build
+
+# Set working directory for processor build
+WORKDIR /processor
+
+# Copy only pom.xml first to leverage Docker caching
+COPY processor/pom.xml .
+
+# Install dependencies for the processor JAR build
+RUN mvn -B dependency:resolve
+
+# Copy Java source code and build the processor JAR
+COPY processor/src ./src
+RUN mvn -B package
+# Output JAR will be at target/videoprocessor.jar
+
+# Build backend 
+FROM node:20 AS backend-build
+
+# Set working directory for backend
+WORKDIR /server
+
+# Copy backend package.json files first for caching
+COPY server/package*.json ./
+
+# Install backend dependencies without devDependencies
+RUN npm ci --omit=dev
+
+# Copy backend source code
+COPY server ./
+
+# Build frontend
+FROM node:20 AS frontend-build
+
+# Set working directory for frontend
+WORKDIR /frontend
+
+# Clone frontend repo
+ARG FRONTEND_REPO=https://github.com/f3liz/centroid-finder-frontend.git
+RUN git clone $FRONTEND_REPO .
+
+# Install dependencies and build production frontend
+RUN npm install && npm run build
+
+# production image
 FROM eclipse-temurin:21-jdk
 
-# Install Node.js, Git, and common tools
+# Install Node.js runtime for frontend + backend
 RUN apt-get update && \
-    apt-get install -y curl gnupg git && \
-    curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
+    apt-get install -y curl gnupg && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Working directory
+# Set working directory in the final image
 WORKDIR /app
 
-# Copy frontend (provided by GitHub Actions)
-COPY frontend ./frontend
+# Copy backend from stage 2
+COPY --from=backend-build /server ./server
 
-# Inject API URL into Next.js build
+# Copy Java processor JAR from stage 1
+COPY --from=processor-build /processor/target/videoprocessor.jar ./processor/videoprocessor.jar
+
+# Copy frontend build from stage 3
+COPY --from=frontend-build /frontend ./frontend
+
+# Set environment variable for frontend API URL
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
-# Build the production frontend
-WORKDIR /app/frontend
-RUN npm install && npm run build
-
-# Build backend
-WORKDIR /app
-
-# Copy backend package.json files first for caching
-COPY server/package*.json ./server/
-
-# Install backend dependencies without devDependencies
-RUN cd server && npm ci --omit=dev
-
-# Copy backend source
-COPY server ./server
-
-# Copy Java processor JAR
-COPY processor/videoprocessor.jar ./processor/videoprocessor.jar
-
-# Expose ports
+# Expose ports for backend and frontend
 EXPOSE 3000 3001
 
 # Install concurrently to run both frontend + backend
 RUN npm install -g concurrently
 
-WORKDIR /app
-
-# Start backend + frontend
+# Start backend + frontend concurrently
 CMD ["concurrently", "node server/index.js", "npm --prefix frontend start"]

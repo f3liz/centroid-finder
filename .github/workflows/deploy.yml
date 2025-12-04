@@ -52,6 +52,8 @@ jobs:
               --name salamander \
               -p 3000:3000 \
               -p 3001:3001 \
+              -e VIDEO_DIR=/app/server/public/videos \
+              -e OUTPUT_DIR=/app/server/jobs \
               -v "$PWD/videos:/app/server/public/videos" \
               -v "$PWD/jobs:/app/server/jobs" \
               ghcr.io/alexanderoruban/salamander:latest

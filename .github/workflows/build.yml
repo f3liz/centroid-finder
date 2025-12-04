@@ -27,11 +27,10 @@ jobs:
           repository: f3liz/centroid-finder-frontend
           path: frontend
 
-      # Authenticate to GHCR using GitHub's built-in GITHUB_TOKEN
+      # Authenticate to GHCR using GitHub's built-in token
       # This works for BOTH you and your partner automatically
       - name: Log in to GitHub Container Registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+        run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       # Build the production Docker image from Dockerfile.prod
       # Pass API URL to the frontend via build arg

@@ -13,7 +13,7 @@ jobs:
 
     permissions:
       contents: read        # Required for checkout
-      packages: write       # Required to push to GHCR
+      packages: write       # Required to push to GHCR (critical!)
 
     steps:
       # Checkout backend repo (this repository)
@@ -27,10 +27,11 @@ jobs:
           repository: f3liz/centroid-finder-frontend
           path: frontend
 
-      # Authenticate to GHCR using your PAT stored as GHCR_PAT
+      # Authenticate to GHCR using GitHub's built-in GITHUB_TOKEN
+      # This works for BOTH you and your partner automatically
       - name: Log in to GitHub Container Registry
         run: |
-          echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       # Build the production Docker image from Dockerfile.prod
       # Pass API URL to the frontend via build arg

@@ -1,18 +1,21 @@
 name: Automated Deployment
 
 on:
-  pull_request:
-    types: [ closed ]
-    branches: [ main ]
+  workflow_run:
+    workflows: ["Build and Push Production Image"]   # Runs after the build workflow
+    types: [completed]                               # Trigger only when build finishes
 
 jobs:
   deploy:
-    if: github.event.pull_request.merged == true
+    # Only run if the previous workflow succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
-    steps: 
+    steps:
+      # Checkout repository (not strictly needed but harmless)
       - uses: actions/checkout@v3
 
+      # Deploy to DigitalOcean VM via SSH
       - name: Deploy to VM (Digital Ocean)
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -28,7 +31,8 @@ jobs:
             sudo apt-get install -y ca-certificates curl gnupg lsb-release
             sudo mkdir -p /etc/apt/keyrings
             curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
+              | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
             sudo apt-get update
             sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 

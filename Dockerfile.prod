@@ -1,0 +1,49 @@
+# Base Image: Java JDK 21 for the processor
+FROM eclipse-temurin:21-jdk
+
+# Install Node.js, Git, and common tools
+RUN apt-get update && \
+    apt-get install -y curl gnupg git && \
+    curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
+    apt-get install -y nodejs && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Working directory
+WORKDIR /app
+
+# Copy frontend (provided by GitHub Actions)
+COPY frontend ./frontend
+
+# Inject API URL into Next.js build
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
+# Build the production frontend
+WORKDIR /app/frontend
+RUN npm install && npm run build
+
+# Build backend
+WORKDIR /app
+
+# Copy backend package.json files first for caching
+COPY server/package*.json ./server/
+
+# Install backend dependencies without devDependencies
+RUN cd server && npm ci --omit=dev
+
+# Copy backend source
+COPY server ./server
+
+# Copy Java processor JAR
+COPY processor/videoprocessor.jar ./processor/videoprocessor.jar
+
+# Expose ports
+EXPOSE 3000 3001
+
+# Install concurrently to run both frontend + backend
+RUN npm install -g concurrently
+
+WORKDIR /app
+
+# Start backend + frontend
+CMD ["concurrently", "node server/index.js", "npm --prefix frontend start"]

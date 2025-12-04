@@ -1,0 +1,46 @@
+name: Build and Push Production Image
+
+on:
+  workflow_run:
+    workflows: ["Automated Testing Pipeline"]   # Runs AFTER test.yml completes
+    types: [completed]                          # Trigger only when test pipeline finishes
+
+jobs:
+  build:
+    # Only run if the Automated Testing Pipeline succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read        # Required for checkout
+      packages: write       # Required to push to GHCR
+
+    steps:
+      # Checkout backend repo (this repository)
+      - name: Checkout backend repository
+        uses: actions/checkout@v3
+
+      # Checkout the frontend repo into ./frontend so Dockerfile.prod can COPY it
+      - name: Checkout frontend repository
+        uses: actions/checkout@v3
+        with:
+          repository: f3liz/centroid-finder-frontend
+          path: frontend
+
+      # Authenticate to GHCR using your PAT stored as GHCR_PAT
+      - name: Log in to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      # Build the production Docker image from Dockerfile.prod
+      # Pass API URL to the frontend via build arg
+      - name: Build Docker image
+        run: |
+          docker build \
+            -f Dockerfile.prod \
+            --build-arg NEXT_PUBLIC_API_URL=${{ secrets.API_URL }} \
+            -t ghcr.io/${{ github.repository_owner }}/salamander:latest .
+
+      # Push the resulting build to GHCR
+      - name: Push Docker image to GHCR
+        run: docker push ghcr.io/${{ github.repository_owner }}/salamander:latest

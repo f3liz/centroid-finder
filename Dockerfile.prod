@@ -1,82 +1,85 @@
-# Base Image: Java JDK 21 for building the processor
+# Base Image: used only for building the processor JAR
 FROM maven:3.9.6-eclipse-temurin-21 AS processor-build
 
-# Set working directory for processor build
+# Work inside /processor
 WORKDIR /processor
 
 # Copy only pom.xml first to leverage Docker caching
 COPY processor/pom.xml .
 
-# Install dependencies for the processor JAR build
+# Download dependencies
 RUN mvn -B dependency:resolve
 
-# Copy Java source code and build the processor JAR
+# Copy the actual Java source
 COPY processor/src ./src
+
+# Build both regular JAR + fat JAR created by assembly plugin
 RUN mvn -B package
-# Output JAR will be at target/videoprocessor.jar
+# After this step:
+#   /processor/target/centroid-finder-1.0-SNAPSHOT.jar
+#   /processor/videoprocessor.jar    <-- THIS is the one we want
 
 
-# Build backend 
+# Backend build stage
 FROM node:20 AS backend-build
 
-# Set working directory for backend
+# Work inside /server
 WORKDIR /server
 
-# Copy backend package.json files first for caching
+# Copy backend dependencies files
 COPY server/package*.json ./
 
-# Install backend dependencies without devDependencies
+# Install backend dependencies (prod only)
 RUN npm ci --omit=dev
 
-# Copy backend source code
+# Copy backend source
 COPY server ./
 
 
-# Build frontend
+# Frontend build stage
 FROM node:20 AS frontend-build
 
-# Set working directory for frontend
+# Work inside /frontend
 WORKDIR /frontend
 
-# Clone frontend repo
-ARG FRONTEND_REPO=https://github.com/f3liz/centroid-finder-frontend.git
-RUN git clone $FRONTEND_REPO .
+# Copy the frontend repo (already checked out via workflow)
+COPY frontend ./ 
 
-# Install dependencies and build production frontend
+# Install and build the Next.js frontend
 RUN npm install && npm run build
 
 
-# production image
+# Final production image
 FROM eclipse-temurin:21-jdk
 
-# Install Node.js runtime for frontend + backend
+# Install Node.js runtime (for backend + serving frontend)
 RUN apt-get update && \
     apt-get install -y curl gnupg && \
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Set working directory in the final image
+# Work inside /app
 WORKDIR /app
 
-# Copy backend from stage 2
+# Copy backend from the backend build stage
 COPY --from=backend-build /server ./server
 
-# Copy the processor JAR built in stage 1
+# Copy the FAT processor JAR 
 COPY --from=processor-build /processor/videoprocessor.jar ./processor/videoprocessor.jar
 
-# Copy frontend build from stage 3
+# Copy the built frontend
 COPY --from=frontend-build /frontend ./frontend
 
-# Set environment variable for frontend API URL
+# Receive API URL from GitHub Actions
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
-# Expose ports for backend and frontend
+# Expose ports for backend (3000) and frontend (3001)
 EXPOSE 3000 3001
 
 # Install concurrently to run both frontend + backend
 RUN npm install -g concurrently
 
-# Start backend + frontend concurrently
+# Start both servers at runtime
 CMD ["concurrently", "node server/index.js", "npm --prefix frontend start"]

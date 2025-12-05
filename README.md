@@ -97,4 +97,4 @@ MIT License - see [LICENSE](./LICENSE) for details.
 ### Automated Deployment Pipeline
 - Add more info later
 
-Deployment Test!!!
+Deployment and Build Test after frontend changes!!!

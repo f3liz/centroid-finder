@@ -50,7 +50,6 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 COPY frontend ./
 
 # Create .env.production so Next.js reads the API URL
-# (Must be AFTER COPY or it gets overwritten)
 RUN echo "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL" > .env.production
 
 # Install deps + build production bundle
@@ -79,8 +78,11 @@ COPY --from=processor-build /processor/videoprocessor.jar ./processor/videoproce
 # Copy the built frontend
 COPY --from=frontend-build /frontend ./frontend
 
-# Runtime environment (not used by Next.js build)
+# Create .env.production INSIDE the final image (otherwise it never exists)
 ARG NEXT_PUBLIC_API_URL
+RUN echo "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL" > ./frontend/.env.production
+
+# Runtime environment (not used by Next.js build)
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 # Expose ports for backend (3000) and frontend (3001)

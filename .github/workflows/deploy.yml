@@ -41,6 +41,9 @@ jobs:
             mkdir -p ~/salamander/jobs
             cd ~/salamander
 
+            echo "*** Removing old cached image (forces real latest pull) ***"
+            docker image rm ghcr.io/alexanderoruban/salamander:latest || true
+
             echo "*** Pulling latest image ***"
             docker pull ghcr.io/alexanderoruban/salamander:latest
 

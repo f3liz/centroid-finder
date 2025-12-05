@@ -15,7 +15,7 @@ jobs:
       contents: read        # Required for checkout
       packages: write       # Required to push to GHCR (critical!)
 
-    # Pass in ENV variable to Docker
+    # Pass in ENV variable to Docker (still available for your echo/debug)
     env:
       NEXT_PUBLIC_API_URL: ${{ secrets.API_URL }}
 
@@ -37,12 +37,13 @@ jobs:
         run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       # Build the production Docker image from Dockerfile.prod
-      # Pass API URL to the frontend via build arg
+      # Pass API URL to the frontend via build arg (using secrets directly = FIX)
       - name: Build Docker image
         run: |
+          echo "DEBUG: Building image with API URL '${{ secrets.API_URL }}'"
           docker build \
             -f Dockerfile.prod \
-            --build-arg NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL}" \
+            --build-arg NEXT_PUBLIC_API_URL="${{ secrets.API_URL }}" \
             -t ghcr.io/${{ github.repository_owner }}/salamander:latest .
 
       # Push the resulting build to GHCR

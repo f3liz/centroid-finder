@@ -15,6 +15,10 @@ jobs:
       contents: read        # Required for checkout
       packages: write       # Required to push to GHCR (critical!)
 
+    # Pass in ENV variable to Docker
+    env:
+      NEXT_PUBLIC_API_URL: ${{ secrets.API_URL }}
+
     steps:
       # Checkout backend repo (this repository)
       - name: Checkout backend repository
@@ -38,7 +42,7 @@ jobs:
         run: |
           docker build \
             -f Dockerfile.prod \
-            --build-arg NEXT_PUBLIC_API_URL=${{ secrets.API_URL }} \
+            --build-arg NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
             -t ghcr.io/${{ github.repository_owner }}/salamander:latest .
 
       # Push the resulting build to GHCR

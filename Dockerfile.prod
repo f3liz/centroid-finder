@@ -32,7 +32,7 @@ COPY server/package*.json ./
 # Install backend dependencies (prod only)
 RUN npm ci --omit=dev
 
-# Copy backend source
+# Copy the backend source
 COPY server ./
 
 
@@ -42,10 +42,14 @@ FROM node:20 AS frontend-build
 # Work inside /frontend
 WORKDIR /frontend
 
-# Copy the frontend repo (already checked out via workflow)
-COPY frontend ./ 
+# IMPORTANT: Next.js needs env vars *before* build
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
-# Install and build the Next.js frontend
+# Copy the frontend repo (checked out via workflow)
+COPY frontend ./
+
+# Install deps + build production bundle
 RUN npm install && npm run build
 
 
@@ -65,13 +69,13 @@ WORKDIR /app
 # Copy backend from the backend build stage
 COPY --from=backend-build /server ./server
 
-# Copy the FAT processor JAR 
+# Copy the processor JAR from stage 1
 COPY --from=processor-build /processor/videoprocessor.jar ./processor/videoprocessor.jar
 
 # Copy the built frontend
 COPY --from=frontend-build /frontend ./frontend
 
-# Receive API URL from GitHub Actions
+# Runtime environment (not used by Next.js build)
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 

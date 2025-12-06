@@ -7,15 +7,16 @@ on:
 
 jobs:
   build:
-    # Only run if the Automated Testing Pipeline succeeded & push was on MAIN
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    # Only run if tests succeeded AND the tested branch was main
+    if: ${{ github.event.workflow_run.conclusion == 'success' &&
+            endsWith(github.event.workflow_run.head_branch, 'main') }}
+
     runs-on: ubuntu-latest
 
     permissions:
       contents: read        # Required for checkout
       packages: write       # Required to push to GHCR (critical!)
 
-    # Pass in ENV variable to Docker (still available for your echo/debug)
     env:
       NEXT_PUBLIC_API_URL: ${{ secrets.API_URL }}
 
@@ -32,18 +33,16 @@ jobs:
           path: frontend
 
       # Authenticate to GHCR using GitHub's built-in token
-      # This works for BOTH you and your partner automatically
       - name: Log in to GitHub Container Registry
         run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       # Build the production Docker image from Dockerfile.prod
-      # Pass API URL to the frontend via build arg (using secrets directly = FIX)
       - name: Build Docker image
         run: |
-          echo "DEBUG: Building image with API URL '${{ secrets.API_URL }}'"
           docker build \
+            --no-cache \
             -f Dockerfile.prod \
-            --build-arg NEXT_PUBLIC_API_URL="${{ secrets.API_URL }}" \
+            --build-arg NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL}" \
             -t ghcr.io/${{ github.repository_owner }}/salamander:latest .
 
       # Push the resulting build to GHCR

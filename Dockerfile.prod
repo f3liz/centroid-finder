@@ -49,8 +49,12 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 # Copy the frontend repo (checked out via workflow)
 COPY frontend ./
 
-# Create .env.production so Next.js reads the API URL
-RUN echo "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL" > .env.production
+# Ensure any existing .env.production in the repo is removed,
+# then create a fresh one using the build arg.
+RUN rm -f .env.production && \
+    echo "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL" > .env.production && \
+    echo "--- .env.production created in build stage ---" && \
+    cat .env.production
 
 # Install deps + build production bundle
 RUN npm install && npm run build
@@ -75,14 +79,12 @@ COPY --from=backend-build /server ./server
 # Copy the processor JAR from stage 1
 COPY --from=processor-build /processor/videoprocessor.jar ./processor/videoprocessor.jar
 
-# Copy the built frontend
+# Copy the built frontend bundle
 COPY --from=frontend-build /frontend ./frontend
 
-# Create .env.production INSIDE the final image (otherwise it never exists)
+# DO NOT create .env.production here — Next.js already used it during build.
+# Only keep the runtime variable for ProcessButton, FetchJobs, etc.
 ARG NEXT_PUBLIC_API_URL
-RUN echo "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL" > ./frontend/.env.production
-
-# Runtime environment (not used by Next.js build)
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 # Expose ports for backend (3000) and frontend (3001)

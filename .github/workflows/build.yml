@@ -7,9 +7,15 @@ on:
 
 jobs:
   build:
-    # Only run if tests succeeded AND the tested branch was main
-    if: ${{ github.event.workflow_run.conclusion == 'success' &&
-            endsWith(github.event.workflow_run.head_branch, 'main') }}
+    # Only run if tests succeeded AND the tested branch actually updated main
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      (
+        github.event.workflow_run.head_branch == 'main' ||
+        endsWith(github.event.workflow_run.head_branch, '/main') ||
+        (github.event.workflow_run.pull_requests[0] &&
+         github.event.workflow_run.pull_requests[0].base.ref == 'main')
+      )
 
     runs-on: ubuntu-latest
 

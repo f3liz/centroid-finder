@@ -7,8 +7,18 @@ on:
 
 jobs:
   deploy:
-    # Only run if the previous workflow succeeded
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Only deploy if:
+    # 1. Build workflow succeeded
+    # 2. The build was triggered by an update to MAIN (direct push or merged PR)
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      (
+        github.event.workflow_run.head_branch == 'main' ||
+        endsWith(github.event.workflow_run.head_branch, '/main') ||
+        (github.event.workflow_run.pull_requests[0] &&
+         github.event.workflow_run.pull_requests[0].base.ref == 'main')
+      )
+
     runs-on: ubuntu-latest
 
     steps:

@@ -49,8 +49,8 @@ jobs:
             --no-cache \
             -f Dockerfile.prod \
             --build-arg NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL}" \
-            -t ghcr.io/${{ github.repository_owner }}/salamander:latest .
+            -t ghcr.io/alexanderoruban/salamander:latest .
 
       # Push the resulting build to GHCR
       - name: Push Docker image to GHCR
-        run: docker push ghcr.io/${{ github.repository_owner }}/salamander:latest
+        run: docker push ghcr.io/alexanderoruban/salamander:latest

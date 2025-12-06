@@ -61,14 +61,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # Correct JDK: Java 21, which is required by the pom.xml
+      # Correct JDK: Java 21
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
 
-      # Cache Maven repo to speed up future builds
+      # Cache MAVEN repo
       - name: Cache Maven dependencies
         uses: actions/cache@v3
         with:
@@ -77,13 +77,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-m2-
 
-      # Debug: Verify processor folder
+      # Debug processor
       - name: List processor files
         run: |
           cd processor
           ls -al
 
-      # Install + run Maven unit tests
+      # Run tests
       - name: Run Maven tests
         run: |
           cd processor
@@ -102,39 +102,42 @@ jobs:
         run: |
           git clone https://github.com/f3liz/centroid-finder-frontend.git frontend
 
-      # Pull the prebuilt full-stack container
-      - name: Pull GHCR app image
+      # Build a temporary test container (DO NOT use production image)
+      - name: Build local full-stack image for Cypress
         run: |
-          docker pull ghcr.io/alexanderoruban/salamander:latest
+          docker build \
+            -f Dockerfile.prod \
+            --build-arg NEXT_PUBLIC_API_URL="http://localhost:3000" \
+            -t salamander-test:latest .
 
-      # Run the entire app (backend + processor + frontend)
+      # Run full stack container
       - name: Start full app container
         run: |
           docker run -d \
             --name salamander \
             -p 3000:3000 \
             -p 3001:3001 \
-            ghcr.io/alexanderoruban/salamander:latest
+            salamander-test:latest
 
-      # Wait for the app backend
+      # Wait for backend
       - name: Wait for backend
         run: |
           echo "Waiting for backend..."
           timeout 60 bash -c 'until curl -s http://localhost:3000/; do sleep 2; done'
 
-      # Wait for the frontend
+      # Wait for frontend
       - name: Wait for frontend
         run: |
           echo "Waiting for frontend..."
           timeout 60 bash -c 'until curl -s http://localhost:3001/; do sleep 2; done'
 
-      # Install Cypress (inside frontend directory)
+      # Install Cypress (in frontend folder)
       - name: Install Cypress
         run: |
           cd frontend
           npm install cypress
 
-      # Run Cypress Tests (inside frontend directory)
+      # Run Cypress
       - name: Run Cypress E2E tests
         run: |
           cd frontend

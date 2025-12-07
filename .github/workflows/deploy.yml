@@ -52,10 +52,10 @@ jobs:
             cd ~/salamander
 
             echo "*** Removing old cached image (forces real latest pull) ***"
-            docker image rm ghcr.io/alexanderoruban/salamander:latest || true
+            docker image rm ghcr.io/f3liz/salamander:latest || true
 
             echo "*** Pulling latest image ***"
-            docker pull ghcr.io/alexanderoruban/salamander:latest
+            docker pull ghcr.io/f3liz/salamander:latest
 
             echo "*** Removing old container ***"
             docker rm -f salamander || true
@@ -69,7 +69,7 @@ jobs:
               -e OUTPUT_DIR=/app/server/jobs \
               -v "$PWD/videos:/app/server/public/videos" \
               -v "$PWD/jobs:/app/server/jobs" \
-              ghcr.io/alexanderoruban/salamander:latest
+              ghcr.io/f3liz/salamander:latest
 
             echo "*** Deployment Complete. Running containers: ***"
             docker ps

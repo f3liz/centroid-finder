@@ -40,13 +40,13 @@
   ### Build with No Cache (Development)
   
   ```bash
-  docker build --no-cache -t ghcr.io/alexanderoruban/salamander .
+  docker build --no-cache -t ghcr.io/f3liz/salamander .
   ```
   
   ### Push to GHCR (Intel-only)
   
   ```bash
-  docker push ghcr.io/alexanderoruban/salamander:latest
+  docker push ghcr.io/f3liz/salamander:latest
   ```
   
   ### Cross-platform Build & Push (Intel + Apple M1/M2/M3/M4)
@@ -55,7 +55,7 @@
   docker buildx build \
     --no-cache \
     --platform linux/amd64,linux/arm64 \
-    -t ghcr.io/alexanderoruban/salamander:latest \
+    -t ghcr.io/f3liz/salamander:latest \
     --push \
     .
   ```
@@ -78,7 +78,7 @@
     -p 3000:3000 \
     -v "$PWD/test_videos:/videos" \
     -v "$PWD/test_results:/results" \
-    ghcr.io/alexanderoruban/salamander:latest
+    ghcr.io/f3liz/salamander:latest
   ```
   
   
@@ -92,7 +92,7 @@
     -p 3001:3001 \
     -v "$PWD/test_videos:/videos" \
     -v "$PWD/test_results:/results" \
-    ghcr.io/alexanderoruban/salamander:latest
+    ghcr.io/f3liz/salamander:latest
   ```
   
   
